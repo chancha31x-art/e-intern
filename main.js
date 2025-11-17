@@ -324,8 +324,7 @@ $("#importJson").addEventListener("change", (e) => {
   e.target.value = "";
 });
 
-$("#printBtn").addEventListener("click", () => window.print());
-$("#reportBtn").addEventListener("click", () => window.print());
+$("#reportBtn").addEventListener("click", () => openReport());
 $("#emailBtn").addEventListener("click", () => composeEmail());
 
 $("#fabAdd").addEventListener("click", () => {
@@ -343,45 +342,62 @@ $("#resetBtn").addEventListener("click", () => {
 });
 
 /* 8) Dashboard — stacked monthly bar (PRO style) ------------------------- */
+let currentPeriod = 30; // default to 30 days
+
 function buildDashboard() {
-  const canvas = $("#chartMonth");
+  const canvas = $("#chartPeriod");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   const W = canvas.width;
   const H = canvas.height;
   ctx.clearRect(0, 0, W, H);
 
-  const year = new Date().getFullYear();
-  const months = Array.from({ length: 12 }, () => ({
-    intern: 0,
-    holiday: 0,
-    study: 0,
-  }));
+  const today = new Date();
+  const startDate = new Date(today);
+  startDate.setDate(today.getDate() - currentPeriod + 1);
+
+  // Create daily buckets
+  const days = [];
+  const dayMap = {};
+  for (let i = 0; i < currentPeriod; i++) {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    dayMap[key] = {
+      intern: 0,
+      holiday: 0,
+      study: 0,
+    };
+    days.push(key);
+  }
 
   entries.forEach((e) => {
     if (!e.date) return;
     const d = new Date(e.date);
-    if (d.getFullYear() !== year) return;
-    const m = d.getMonth();
-    const h = Number(e.hours || 0);
-    if (months[m][e.category] != null) {
-      months[m][e.category] += h;
+    const key = d.toISOString().slice(0, 10);
+    if (dayMap[key]) {
+      const h = Number(e.hours || 0);
+      if (dayMap[key][e.category] != null) {
+        dayMap[key][e.category] += h;
+      }
     }
   });
 
-  const stacks = months.map((m) => ({
-    intern: m.intern || 0,
-    holiday: m.holiday || 0,
-    study: m.study || 0,
-    total: (m.intern || 0) + (m.holiday || 0) + (m.study || 0),
+  const stacks = days.map((day) => ({
+    day,
+    intern: dayMap[day].intern || 0,
+    holiday: dayMap[day].holiday || 0,
+    study: dayMap[day].study || 0,
+    total: (dayMap[day].intern || 0) + (dayMap[day].holiday || 0) + (dayMap[day].study || 0),
   }));
 
   const maxTotal = Math.max(1, ...stacks.map((s) => s.total));
 
-  const monthLabels = [
-    "ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.",
-    "ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค.",
-  ];
+  // Format labels (date range)
+  const dayLabels = days.map((day) => {
+    const d = new Date(day + "T00:00:00");
+    return d.getDate(); // show day of month
+  });
 
   const left = 52;
   const right = 40;
@@ -418,9 +434,9 @@ function buildDashboard() {
   ctx.setLineDash([]);
 
   // bars
-  const barCount = 12;
+  const barCount = stacks.length;
   const slotW = innerW / barCount;
-  const barW = slotW * 0.6;
+  const barW = Math.max(8, Math.min(slotW * 0.6, 20));
 
   stacks.forEach((s, i) => {
     const xCenter = left + slotW * i + slotW / 2;
@@ -443,23 +459,28 @@ function buildDashboard() {
     });
 
     // total label top of bar (ถ้ามีค่า)
-    if (s.total > 0) {
+    if (s.total > 0 && barCount <= 30) {
       ctx.textAlign = "center";
       ctx.fillStyle = "#e5e7eb";
-      ctx.font = "11px Poppins";
-      const textY = yBottom - 10;
+      ctx.font = "10px Poppins";
+      const textY = yBottom - 8;
       ctx.fillText(s.total.toFixed(1).replace(/\.0$/, ""), xCenter, textY);
     }
   });
 
-  // month labels
+  // day labels
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
   ctx.fillStyle = "#9ca3af";
   ctx.font = "11px Poppins";
-  monthLabels.forEach((lb, i) => {
-    const xCenter = left + slotW * i + slotW / 2;
-    ctx.fillText(lb, xCenter, top + innerH + 8);
+  
+  // Show every Nth label depending on period
+  const labelStep = currentPeriod === 30 ? 3 : currentPeriod === 60 ? 6 : 9;
+  dayLabels.forEach((dayNum, i) => {
+    if (i % labelStep === 0 || i === dayLabels.length - 1) {
+      const xCenter = left + slotW * i + slotW / 2;
+      ctx.fillText(dayNum, xCenter, top + innerH + 8);
+    }
   });
 
   // legend bottom-right
@@ -622,6 +643,158 @@ function composeEmail() {
     `${body}%0D%0A%0D%0A`;
 }
 
+/* 10) Report Modal (New) --------------------------------------------------- */
+function openReport() {
+  const y = view.getFullYear();
+  const m = view.getMonth();
+
+  // Filter entries for this month
+  const monthEntries = entries.filter((e) => {
+    const d = new Date(e.date);
+    return d.getFullYear() === y && d.getMonth() === m;
+  }).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // Calculate stats
+  const totalHours = monthEntries.reduce((s, e) => s + Number(e.hours || 0), 0);
+  const workDays = new Set(monthEntries.map((e) => e.date)).size;
+
+  const byCategory = { intern: 0, study: 0, holiday: 0 };
+  monthEntries.forEach((e) => {
+    const cat = e.category || "intern";
+    if (byCategory[cat] != null) {
+      byCategory[cat] += Number(e.hours || 0);
+    }
+  });
+
+  // Collect all skills with hours
+  const skillMap = {};
+  monthEntries.forEach((e) => {
+    const h = Number(e.hours || 0);
+    (e.skills || []).forEach((s) => {
+      skillMap[s] = (skillMap[s] || 0) + h;
+    });
+  });
+  const topSkills = Object.entries(skillMap)
+    .map(([name, hours]) => ({ name, hours }))
+    .sort((a, b) => b.hours - a.hours);
+
+/* Generate Plain Text Report for PDF Printing */
+function generatePlainReport(y, m, monthEntries, totalHours, workDays, byCategory, topSkills) {
+  const monthName = monthTitle(y, m);
+  
+  let plainText = "";
+  plainText += "E-Intern Diary — รายงานประจำเดือน\n";
+  plainText += "เดือน: " + monthName + "\n";
+  plainText += "\n";
+  plainText += "สรุปผล\n";
+  plainText += "• ชั่วโมงฝึกงานรวม: " + totalHours.toFixed(1) + " ชม.\n";
+  plainText += "• วันทำงานทั้งหมด: " + workDays + " วัน\n";
+  plainText += "• หมวดงาน:\n";
+  plainText += "  ฝึกงาน " + byCategory.intern.toFixed(1) + " ชม.\n";
+  plainText += "  ไปเรียน " + byCategory.study.toFixed(1) + " ชม.\n";
+  plainText += "  วันหยุด " + byCategory.holiday.toFixed(1) + " ชม.\n";
+  plainText += "\n";
+  plainText += "กิจกรรมที่ทำ\n";
+  
+  monthEntries.forEach((e) => {
+    const d = new Date(e.date);
+    const dayNum = d.getDate();
+    const monthAbb = new Date(y, m, 1).toLocaleDateString("th-TH", {
+      month: "short",
+    });
+    plainText += dayNum + " " + monthAbb + ". — " + e.title + "\n";
+  });
+  
+  if (topSkills.length > 0) {
+    plainText += "\n";
+    plainText += "สรุปทักษะ\n";
+    topSkills.forEach((s) => {
+      plainText += "• " + s.name + " (" + s.hours.toFixed(1) + " ชม.)\n";
+    });
+  }
+  
+  // Set both styled and plain reports
+  const plainHtml = `<pre style="font-family:monospace;white-space:pre-wrap;word-wrap:break-word;line-height:1.6;font-size:12px;">${escapeHtml(plainText)}</pre>`;
+  $("#plainReport").innerHTML = plainHtml;
+}
+
+  // Build report HTML (Plain & Simple for PDF)
+  const monthName = monthTitle(y, m);
+  const html = `
+    <h1 style="font-size:20px;margin:0 0 20px;text-align:center;font-weight:700;">E-Intern Diary — รายงานประจำเดือน</h1>
+    
+    <p style="text-align:center;color:#666;margin:0 0 24px;"><strong>เดือน:</strong> ${monthName}</p>
+
+    <h2 style="font-size:16px;margin:24px 0 16px;font-weight:700;border-bottom:2px solid #333;padding-bottom:8px;">สรุปผล</h2>
+    <ul style="list-style:none;padding:0;margin:0 0 16px;line-height:2;">
+      <li>• ชั่วโมงฝึกงานรวม: <strong>${totalHours.toFixed(1)}</strong> ชม.</li>
+      <li>• วันทำงานทั้งหมด: <strong>${workDays}</strong> วัน</li>
+      <li style="margin-top:12px;"><strong>หมวดงาน:</strong></li>
+      <li style="margin-left:20px;">ฝึกงาน ${byCategory.intern.toFixed(1)} ชม.</li>
+      <li style="margin-left:20px;">ไปเรียน ${byCategory.study.toFixed(1)} ชม.</li>
+      <li style="margin-left:20px;">วันหยุด ${byCategory.holiday.toFixed(1)} ชม.</li>
+    </ul>
+
+    <h2 style="font-size:16px;margin:24px 0 16px;font-weight:700;border-bottom:2px solid #333;padding-bottom:8px;">กิจกรรมที่ทำ</h2>
+    <ul style="list-style:none;padding:0;margin:0;line-height:1.8;">
+      ${monthEntries
+        .map((e) => {
+          const d = new Date(e.date);
+          const dayNum = d.getDate();
+          const monthAbb = new Date(y, m, 1).toLocaleDateString("th-TH", {
+            month: "short",
+          });
+          return `<li>${dayNum} ${monthAbb}. — ${escapeHtml(e.title)}</li>`;
+        })
+        .join("")}
+    </ul>
+
+    ${
+      topSkills.length > 0
+        ? `
+    <h2 style="font-size:16px;margin:24px 0 16px;font-weight:700;border-bottom:2px solid #333;padding-bottom:8px;">สรุปทักษะ</h2>
+    <ul style="list-style:none;padding:0;margin:0;line-height:1.8;">
+      ${topSkills
+        .map((s) => `<li>• ${escapeHtml(s.name)} (${s.hours.toFixed(1)} ชม.)</li>`)
+        .join("")}
+    </ul>
+    `
+        : ""
+    }
+  `;
+
+  // Show modal
+  const modal = $("#reportModal");
+  const body = $("#reportBody");
+  body.innerHTML = html;
+  modal.removeAttribute("hidden");
+
+  // Setup print button - Generate plain text report
+  $("#reportPrintBtn")?.addEventListener("click", () => {
+    generatePlainReport(y, m, monthEntries, totalHours, workDays, byCategory, topSkills);
+    setTimeout(() => window.print(), 100);
+  });
+}
+
+/* Close report modal */
+$("#reportModal")?.addEventListener("click", (e) => {
+  const modal = $("#reportModal");
+  if (e.target === modal || e.target.classList.contains("report-overlay")) {
+    modal.setAttribute("hidden", "");
+  }
+});
+
+$(".report-close")?.addEventListener("click", () => {
+  $("#reportModal").setAttribute("hidden", "");
+});
+
+// Close on Esc key
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !$("#reportModal").hasAttribute("hidden")) {
+    $("#reportModal").setAttribute("hidden", "");
+  }
+});
+
 /* 11) Lightbox ------------------------------------------------------------ */
 $("#entryList")?.addEventListener("click", (e) => {
   const img = e.target.closest("img");
@@ -636,5 +809,25 @@ $(".lb-close")?.addEventListener("click", () => {
 
 /* 12) Init ---------------------------------------------------------------- */
 (function init() {
+  // Setup period button listeners
+  $("#period30").addEventListener("click", () => {
+    currentPeriod = 30;
+    $$(".period-btn").forEach((btn) => btn.classList.remove("active"));
+    $("#period30").classList.add("active");
+    buildDashboard();
+  });
+  $("#period60").addEventListener("click", () => {
+    currentPeriod = 60;
+    $$(".period-btn").forEach((btn) => btn.classList.remove("active"));
+    $("#period60").classList.add("active");
+    buildDashboard();
+  });
+  $("#period90").addEventListener("click", () => {
+    currentPeriod = 90;
+    $$(".period-btn").forEach((btn) => btn.classList.remove("active"));
+    $("#period90").classList.add("active");
+    buildDashboard();
+  });
+
   render();
 })();

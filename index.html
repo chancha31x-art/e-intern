@@ -32,7 +32,6 @@
           </label>
           <button id="reportBtn" class="btn">สร้างรายงาน (PDF)</button>
           <button id="emailBtn" class="btn">ส่งทางอีเมล</button>
-          <button id="printBtn" class="btn">พิมพ์/บันทึก PDF</button>
           <button id="resetBtn" class="btn btn-danger">ล้างทั้งหมด</button>
         </div>
       </nav>
@@ -154,10 +153,14 @@
       <section class="card">
         <div class="hd">
           <h2>แดชบอร์ด</h2>
-          <span class="summary">สรุปชั่วโมงฝึกงานรายเดือน (ปีปัจจุบัน)</span>
+          <div class="chart-period-tabs">
+            <button id="period30" class="period-btn active">30 วัน</button>
+            <button id="period60" class="period-btn">60 วัน</button>
+            <button id="period90" class="period-btn">90 วัน</button>
+          </div>
         </div>
         <div class="bd dash">
-          <canvas id="chartMonth" width="1100" height="320"></canvas>
+          <canvas id="chartPeriod" width="1100" height="320"></canvas>
         </div>
       </section>
     </div>
@@ -194,6 +197,23 @@
 
   <!-- Toast (จะถูกใช้โดย JS) -->
   <div class="toast" id="toast"></div>
+
+  <!-- Report Page (Modal) -->
+  <div id="reportModal" class="report-modal" hidden>
+    <div class="report-overlay"></div>
+    <div class="report-content">
+      <div class="report-header-bar">
+        <button class="report-print-btn" id="reportPrintBtn">🖨️ พิมพ์ / บันทึก PDF</button>
+        <button class="report-close" aria-label="ปิดรายงาน">✕</button>
+      </div>
+      <div id="reportBody"></div>
+    </div>
+  </div>
+
+  <!-- Plain Text Report for Printing (Hidden) -->
+  <div id="plainReportContainer" style="display:none;">
+    <div id="plainReport"></div>
+  </div>
 
   <!-- JS -->
   <script src="main.js"></script>
