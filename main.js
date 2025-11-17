@@ -69,13 +69,15 @@ let view = new Date();
 
 const CATEGORY_LABEL = {
   intern: "ฝึกงาน",
+  work: "ทำงาน",
+  study: "เรียน",
   holiday: "วันหยุด",
-  study: "ไปเรียน",
 };
 const CATEGORY_COLOR = {
   intern: "#7dd3fc", // ฟ้า
-  holiday: "#fb7185", // แดง
+  work: "#4ade80", // เขียว
   study: "#a78bfa", // ม่วง
+  holiday: "#fb7185", // แดง
 };
 
 function saveState() {
@@ -366,6 +368,7 @@ function buildDashboard() {
     dayMap[key] = {
       intern: 0,
       holiday: 0,
+      work: 0,
       study: 0,
     };
     days.push(key);
@@ -386,9 +389,10 @@ function buildDashboard() {
   const stacks = days.map((day) => ({
     day,
     intern: dayMap[day].intern || 0,
-    holiday: dayMap[day].holiday || 0,
+    work: dayMap[day].work || 0,
     study: dayMap[day].study || 0,
-    total: (dayMap[day].intern || 0) + (dayMap[day].holiday || 0) + (dayMap[day].study || 0),
+    holiday: dayMap[day].holiday || 0,
+    total: (dayMap[day].intern || 0) + (dayMap[day].work || 0) + (dayMap[day].study || 0) + (dayMap[day].holiday || 0),
   }));
 
   const maxTotal = Math.max(1, ...stacks.map((s) => s.total));
@@ -444,8 +448,9 @@ function buildDashboard() {
 
     const parts = [
       { key: "intern", color: CATEGORY_COLOR.intern, val: s.intern },
-      { key: "holiday", color: CATEGORY_COLOR.holiday, val: s.holiday },
+      { key: "work", color: CATEGORY_COLOR.work, val: s.work },
       { key: "study", color: CATEGORY_COLOR.study, val: s.study },
+      { key: "holiday", color: CATEGORY_COLOR.holiday, val: s.holiday },
     ];
 
     parts.forEach((p) => {
@@ -486,10 +491,11 @@ function buildDashboard() {
   // legend bottom-right
   const legendItems = [
     { label: "ฝึกงาน", color: CATEGORY_COLOR.intern },
+    { label: "ทำงาน", color: CATEGORY_COLOR.work },
+    { label: "เรียน", color: CATEGORY_COLOR.study },
     { label: "วันหยุด", color: CATEGORY_COLOR.holiday },
-    { label: "ไปเรียน", color: CATEGORY_COLOR.study },
   ];
-  let lx = left + innerW - 150;
+  let lx = left + innerW - 200;
   const ly = top - 14;
   legendItems.forEach((it) => {
     ctx.fillStyle = it.color;
@@ -658,7 +664,7 @@ function openReport() {
   const totalHours = monthEntries.reduce((s, e) => s + Number(e.hours || 0), 0);
   const workDays = new Set(monthEntries.map((e) => e.date)).size;
 
-  const byCategory = { intern: 0, study: 0, holiday: 0 };
+  const byCategory = { intern: 0, work: 0, study: 0, holiday: 0 };
   monthEntries.forEach((e) => {
     const cat = e.category || "intern";
     if (byCategory[cat] != null) {
@@ -691,7 +697,8 @@ function generatePlainReport(y, m, monthEntries, totalHours, workDays, byCategor
   plainText += "• วันทำงานทั้งหมด: " + workDays + " วัน\n";
   plainText += "• หมวดงาน:\n";
   plainText += "  ฝึกงาน " + byCategory.intern.toFixed(1) + " ชม.\n";
-  plainText += "  ไปเรียน " + byCategory.study.toFixed(1) + " ชม.\n";
+  plainText += "  ทำงาน " + byCategory.work.toFixed(1) + " ชม.\n";
+  plainText += "  เรียน " + byCategory.study.toFixed(1) + " ชม.\n";
   plainText += "  วันหยุด " + byCategory.holiday.toFixed(1) + " ชม.\n";
   plainText += "\n";
   plainText += "กิจกรรมที่ทำ\n";
