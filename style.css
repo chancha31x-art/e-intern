@@ -1,0 +1,191 @@
+/* --- E-Intern Diary — Refactored Modern CSS --- */
+
+:root{
+  --bg:#0b1020;
+  --card:#101726;
+  --text:#e9f0fb;
+  --muted:#93a4bc;
+  --accent:#7dd3fc;
+  --accent-2:#a78bfa;
+  --danger:#ef4444;
+
+  --radius-lg:20px;
+  --radius:16px;
+  --radius-sm:12px;
+
+  --shadow:0 12px 36px rgba(0,0,0,.35);
+  --border:1px solid rgba(255,255,255,.06);
+
+  --c-intern:#7dd3fc;
+  --c-holiday:#fb7185;
+  --c-study:#a78bfa;
+}
+
+/* Base */
+*{box-sizing:border-box;}
+html,body{
+  margin:0;padding:0;
+  background:var(--bg);color:var(--text);
+  font-family:Poppins,"Noto Sans Thai",sans-serif;
+}
+a{color:var(--accent)}
+
+/* Wrap */
+.wrap{max-width:1180px;margin:auto;padding:20px}
+
+/* Card */
+.card{background:var(--card);border:var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);margin-bottom:22px}
+.card .hd{
+  padding:18px;
+  border-bottom:var(--border);
+  display:flex;align-items:center;justify-content:space-between
+}
+.card .bd{padding:20px}
+
+/* Header */
+header{position:sticky;top:0;z-index:30;backdrop-filter:blur(10px);background:rgba(10,14,22,.85);border-bottom:var(--border)}
+nav{display:flex;justify-content:space-between;align-items:center;gap:14px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+.actions{display:flex;gap:10px;overflow:auto;padding-bottom:4px}
+.actions::-webkit-scrollbar{display:none}
+
+/* Buttons */
+.btn,button{
+  background:#121a2b;
+  border:var(--border);
+  color:var(--text);
+  padding:10px 16px;
+  border-radius:var(--radius-sm);
+  cursor:pointer;
+  transition:.2s
+}
+.btn:hover,button:hover{background:#162032;transform:translateY(-1px)}
+.btn-accent{background:linear-gradient(135deg,var(--accent),var(--accent-2));border:none;color:#0b1020;font-weight:600}
+.btn-danger{background:#3a1212;border-color:#902020;color:#ffb3b3}
+
+/* Form */
+form .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:680px){form .grid{grid-template-columns:1fr}}
+label{font-size:13px;color:var(--muted);margin-bottom:6px;display:block}
+input,select,textarea{
+  width:100%;padding:14px;
+  background:#0f1626;border:var(--border);
+  border-radius:var(--radius-sm);color:var(--text)
+}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent)}
+textarea{min-height:120px;resize:vertical}
+
+/* List */
+.list{display:grid;gap:14px}
+.entry{background:#0f1626;border:var(--border);border-radius:var(--radius);padding:16px}
+.entry h3{margin:0 0 6px;font-size:18px}
+.meta{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px}
+
+/* Tags */
+.tag{padding:4px 10px;border-radius:999px;font-size:12px;border:var(--border)}
+.tag.intern{background:rgba(125,211,252,.15);border-color:rgba(125,211,252,.4)}
+.tag.study{background:rgba(167,139,250,.15);border-color:rgba(167,139,250,.4)}
+.tag.holiday{background:rgba(251,113,133,.15);border-color:rgba(251,113,133,.4)}
+
+/* Gallery */
+.gallery{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.gallery img{width:96px;height:96px;border-radius:12px;object-fit:cover;cursor:zoom-in}
+
+/* Dashboard */
+.dash{text-align:center}
+
+/* Calendar — Modern iOS */
+.calendar{
+  display:grid;grid-template-columns:repeat(7,1fr);
+  gap:10px;margin-top:12px
+}
+
+.weekday{
+  text-align:center;font-size:14px;
+  color:var(--muted);margin-bottom:6px
+}
+
+.cell{
+  background:#0f1626;border:var(--border);
+  border-radius:20px;
+  min-height:110px;
+  padding:10px;
+  position:relative;
+  transition:.2s;
+}
+.cell:hover{background:#182233}
+
+.cell.today{outline:2px solid rgba(125,211,252,.4)}
+
+.num{
+  position:absolute;top:10px;left:12px;
+  font-size:14px;color:var(--muted)
+}
+
+.pills{
+  margin-top:28px;
+  display:flex;flex-direction:column;gap:6px
+}
+
+.pill{
+  background:#121a2b;border:var(--border);
+  padding:6px 12px;
+  border-radius:12px;
+  font-size:13px;display:flex;gap:6px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+.pill .dot{width:10px;height:10px;border-radius:50%}
+.pill.intern .dot{background:var(--c-intern)}
+.pill.study .dot{background:var(--c-study)}
+.pill.holiday .dot{background:var(--c-holiday)}
+
+.more{font-size:13px;color:var(--muted);padding-left:12px}
+
+/* FAB */
+.fab{
+  position:fixed;right:18px;bottom:18px;
+  padding:18px 22px;border-radius:999px;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  border:none;color:#0b1020;font-weight:600;cursor:pointer;
+  box-shadow:var(--shadow);z-index:90
+}
+
+/* Lightbox */
+.lightbox{
+  position:fixed;inset:0;background:rgba(0,0,0,.8);
+  display:none;align-items:center;justify-content:center;z-index:100
+}
+.lightbox img{max-width:90vw;max-height:80vh;border-radius:14px}
+.lb-close{position:absolute;top:20px;right:20px;font-size:26px;color:white;background:none;border:none}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:#121a2b;border:var(--border);
+  padding:12px 18px;border-radius:12px;display:none
+}
+.toast.show{display:block}
+
+/* Print */
+@media print{
+  header,.actions,.fab,.filters,#entryForm{display:none!important}
+  body{background:white;color:black}
+}
+
+/* New Layout Rows */
+.row-2col{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:22px;
+  margin-bottom:22px;
+}
+.row-1col{
+  width:100%;
+  margin-bottom:22px;
+}
+
+@media(max-width:960px){
+  .row-2col{grid-template-columns:1fr}
+}

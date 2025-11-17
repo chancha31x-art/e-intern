@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0f131a" />
+  <title>E-Intern Diary — Pro</title>
+  <meta name="description" content="เว็บบันทึกการฝึกงาน (E-Intern Diary) แบบ Frontend-only: HTML5 + CSS + Vanilla JS + LocalStorage พร้อมอัปโหลดรูป, แดชบอร์ด, ปฏิทินสไตล์ iOS, และรายงาน PDF">
+  <link rel="icon" href="data:," />
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <!-- HEADER -->
+  <header>
+    <div class="wrap">
+      <nav>
+        <div class="brand">
+          <div class="logo"></div>
+          <div><strong>E-Intern Diary</strong></div>
+        </div>
+
+        <div class="actions">
+          <button id="exportBtn" class="btn">Export JSON</button>
+          <label class="btn" for="importJson">Import JSON
+            <input id="importJson" type="file" accept="application/json" hidden>
+          </label>
+          <button id="reportBtn" class="btn">สร้างรายงาน (PDF)</button>
+          <button id="emailBtn" class="btn">ส่งทางอีเมล</button>
+          <button id="printBtn" class="btn">พิมพ์/บันทึก PDF</button>
+          <button id="resetBtn" class="btn btn-danger">ล้างทั้งหมด</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="wrap" id="app">
+
+    <!-- ROW 1 — Form + List -->
+    <div class="row-2col">
+      <!-- FORM -->
+      <section class="card">
+        <div class="hd">
+          <h2>เพิ่มบันทึกการฝึกงาน</h2>
+          <span id="formMode" class="summary">โหมด: สร้างใหม่</span>
+        </div>
+
+        <div class="bd">
+          <form id="entryForm" enctype="multipart/form-data">
+
+            <div class="grid">
+              <p>
+                <label>วันที่</label>
+                <input type="date" id="date" required>
+              </p>
+
+              <p>
+                <label>หัวข้อ / งานหลัก</label>
+                <input type="text" id="title" placeholder="เช่น อบรมความปลอดภัย..." required>
+              </p>
+
+              <p>
+                <label>ชั่วโมงที่ฝึก</label>
+                <input type="number" id="hours" min="0" step="0.5" placeholder="6" required>
+              </p>
+
+              <p>
+                <label>ความรู้สึกวันนี้</label>
+                <select id="mood">
+                  <option value="🙂">🙂 ปกติดี</option>
+                  <option value="😄">😄 ยอดเยี่ยม</option>
+                  <option value="😓">😓 เหนื่อย</option>
+                  <option value="🤔">🤔 สับสน</option>
+                </select>
+              </p>
+            </div>
+
+            <p>
+              <label>ประเภท/แท็กหลัก</label>
+              <select id="category">
+                <option value="intern">ฝึกงาน</option>
+                <option value="holiday">วันหยุด</option>
+                <option value="study">ไปเรียน</option>
+              </select>
+            </p>
+
+            <p>
+              <label>สิ่งที่ทำ/เรียนรู้</label>
+              <textarea id="tasks"></textarea>
+            </p>
+
+            <div class="grid">
+              <p>
+                <label>ทักษะที่ใช้ (comma คั่น)</label>
+                <input type="text" id="skills" placeholder="Excel, HTML, Communication">
+              </p>
+
+              <p>
+                <label>ลิงก์อ้างอิง (comma คั่น)</label>
+                <input type="url" id="links" placeholder="https://docs.example">
+              </p>
+            </div>
+
+            <p>
+              <label>รูปภาพผลงาน</label>
+              <input type="file" id="photos" accept="image/*" multiple>
+            </p>
+
+            <div class="row">
+              <button class="btn-accent" id="saveBtn">บันทึก</button>
+              <button id="cancelEdit" class="btn" hidden>ยกเลิก</button>
+            </div>
+
+            <input type="hidden" id="editingId">
+
+          </form>
+        </div>
+      </section>
+
+      <!-- LIST -->
+      <section class="card">
+        <div class="hd">
+          <h2>บันทึกทั้งหมด</h2>
+          <details class="filters">
+            <summary>ตัวกรอง ▾</summary>
+            <input type="date" id="filterFrom">
+            <input type="date" id="filterTo">
+            <select id="filterMood">
+              <option value="">ทุกอารมณ์</option>
+              <option>😄</option>
+              <option>🙂</option>
+              <option>🤔</option>
+              <option>😓</option>
+            </select>
+            <input type="search" id="filterQ" placeholder="ค้นหา...">
+            <button id="clearFilters" class="btn">ล้างทั้งหมด</button>
+          </details>
+        </div>
+
+        <div class="bd">
+          <div id="totals" class="summary"></div>
+          <div id="entryList" class="list"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ROW 2 — Dashboard -->
+    <div class="row-1col">
+      <section class="card">
+        <div class="hd"><h2>แดชบอร์ด</h2></div>
+        <div class="bd dash">
+          <canvas id="chartTags" width="1100" height="280"></canvas>
+        </div>
+      </section>
+    </div>
+
+    <!-- ROW 3 — Calendar -->
+    <div class="row-1col">
+      <section class="card">
+        <div class="hd">
+          <h2>ปฏิทินการฝึก (iOS)</h2>
+          <div class="cal-actions">
+            <button id="prevMon">◀</button>
+            <div id="calTitle" class="cal-title"></div>
+            <button id="nextMon">▶</button>
+            <button id="todayBtn" class="btn">วันนี้</button>
+          </div>
+        </div>
+
+        <div class="bd">
+          <div id="calendar" class="calendar"></div>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <button class="fab" id="fabAdd">＋ เพิ่มบันทึก</button>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <button class="lb-close">✕</button>
+    <img alt="preview">
+  </div>
+
+  <!-- JS -->
+  <script src="main.js"></script>
+</body>
+</html>
