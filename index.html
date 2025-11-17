@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0f131a" />
   <title>E-Intern Diary — Pro</title>
-  <meta name="description" content="เว็บบันทึกการฝึกงาน (E-Intern Diary) แบบ Frontend-only: HTML5 + CSS + Vanilla JS + LocalStorage พร้อมอัปโหลดรูป, แดชบอร์ด, ปฏิทินสไตล์ iOS, และรายงาน PDF">
+  <meta name="description" content="เว็บบันทึกการฝึกงาน (E-Intern Diary) แบบ Frontend-only: HTML5 + CSS + Vanilla JS + LocalStorage พร้อมอัปโหลดรูป, แดชบอร์ด, ปฏิทินสไตล์ iOS, และส่งสรุปทางอีเมล">
   <link rel="icon" href="data:," />
 
   <!-- Fonts -->
@@ -56,22 +56,22 @@
 
             <div class="grid">
               <p>
-                <label>วันที่</label>
+                <label for="date">วันที่</label>
                 <input type="date" id="date" required>
               </p>
 
               <p>
-                <label>หัวข้อ / งานหลัก</label>
+                <label for="title">หัวข้อ / งานหลัก</label>
                 <input type="text" id="title" placeholder="เช่น อบรมความปลอดภัย..." required>
               </p>
 
               <p>
-                <label>ชั่วโมงที่ฝึก</label>
+                <label for="hours">ชั่วโมงที่ฝึก</label>
                 <input type="number" id="hours" min="0" step="0.5" placeholder="6" required>
               </p>
 
               <p>
-                <label>ความรู้สึกวันนี้</label>
+                <label for="mood">ความรู้สึกวันนี้</label>
                 <select id="mood">
                   <option value="🙂">🙂 ปกติดี</option>
                   <option value="😄">😄 ยอดเยี่ยม</option>
@@ -82,7 +82,7 @@
             </div>
 
             <p>
-              <label>ประเภท/แท็กหลัก</label>
+              <label for="category">ประเภท/แท็กหลัก</label>
               <select id="category">
                 <option value="intern">ฝึกงาน</option>
                 <option value="holiday">วันหยุด</option>
@@ -91,34 +91,33 @@
             </p>
 
             <p>
-              <label>สิ่งที่ทำ/เรียนรู้</label>
-              <textarea id="tasks"></textarea>
+              <label for="tasks">สิ่งที่ทำ/เรียนรู้</label>
+              <textarea id="tasks" placeholder="สรุปงานที่ทำ สิ่งที่เรียนรู้ หรือปัญหาที่เจอ"></textarea>
             </p>
 
             <div class="grid">
               <p>
-                <label>ทักษะที่ใช้ (comma คั่น)</label>
+                <label for="skills">ทักษะที่ใช้ (comma คั่น)</label>
                 <input type="text" id="skills" placeholder="Excel, HTML, Communication">
               </p>
 
               <p>
-                <label>ลิงก์อ้างอิง (comma คั่น)</label>
-                <input type="url" id="links" placeholder="https://docs.example">
+                <label for="links">ลิงก์อ้างอิง (comma คั่น)</label>
+                <input type="url" id="links" placeholder="https://docs.example, https://video.example">
               </p>
             </div>
 
             <p>
-              <label>รูปภาพผลงาน</label>
+              <label for="photos">รูปภาพผลงาน</label>
               <input type="file" id="photos" accept="image/*" multiple>
             </p>
 
             <div class="row">
-              <button class="btn-accent" id="saveBtn">บันทึก</button>
-              <button id="cancelEdit" class="btn" hidden>ยกเลิก</button>
+              <button type="submit" class="btn-accent" id="saveBtn">บันทึก</button>
+              <button type="button" id="cancelEdit" class="btn" hidden>ยกเลิก</button>
             </div>
 
             <input type="hidden" id="editingId">
-
           </form>
         </div>
       </section>
@@ -138,14 +137,14 @@
               <option>🤔</option>
               <option>😓</option>
             </select>
-            <input type="search" id="filterQ" placeholder="ค้นหา...">
-            <button id="clearFilters" class="btn">ล้างทั้งหมด</button>
+            <input type="search" id="filterQ" placeholder="ค้นหาหัวข้อ/ทักษะ/สิ่งที่ทำ">
+            <button id="clearFilters" class="btn">ล้างตัวกรอง</button>
           </details>
         </div>
 
         <div class="bd">
-          <div id="totals" class="summary"></div>
-          <div id="entryList" class="list"></div>
+          <div class="summary" id="totals">0 entries · 0 ชม.</div>
+          <div class="list" id="entryList"></div>
         </div>
       </section>
     </div>
@@ -153,9 +152,12 @@
     <!-- ROW 2 — Dashboard -->
     <div class="row-1col">
       <section class="card">
-        <div class="hd"><h2>แดชบอร์ด</h2></div>
+        <div class="hd">
+          <h2>แดชบอร์ด</h2>
+          <span class="summary">สรุปชั่วโมงฝึกงานรายเดือน (ปีปัจจุบัน)</span>
+        </div>
         <div class="bd dash">
-          <canvas id="chartTags" width="1100" height="280"></canvas>
+          <canvas id="chartMonth" width="1100" height="320"></canvas>
         </div>
       </section>
     </div>
@@ -166,21 +168,22 @@
         <div class="hd">
           <h2>ปฏิทินการฝึก (iOS)</h2>
           <div class="cal-actions">
-            <button id="prevMon">◀</button>
-            <div id="calTitle" class="cal-title"></div>
-            <button id="nextMon">▶</button>
-            <button id="todayBtn" class="btn">วันนี้</button>
+            <button id="prevMon" class="cal-btn">◀</button>
+            <div class="cal-title" id="calTitle"></div>
+            <button id="nextMon" class="cal-btn">▶</button>
+            <button id="todayBtn" class="btn cal-today-btn">วันนี้</button>
           </div>
         </div>
 
         <div class="bd">
-          <div id="calendar" class="calendar"></div>
+          <div class="calendar" id="calendar"></div>
         </div>
       </section>
     </div>
 
   </main>
 
+  <!-- FAB -->
   <button class="fab" id="fabAdd">＋ เพิ่มบันทึก</button>
 
   <!-- Lightbox -->
@@ -188,6 +191,9 @@
     <button class="lb-close">✕</button>
     <img alt="preview">
   </div>
+
+  <!-- Toast (จะถูกใช้โดย JS) -->
+  <div class="toast" id="toast"></div>
 
   <!-- JS -->
   <script src="main.js"></script>

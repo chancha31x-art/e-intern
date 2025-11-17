@@ -1,8 +1,8 @@
 /* --------------------------------------------------------------------------
- *  E-Intern Diary — main.js
- *  - Stacked month summary chart (Apple Calendar style)
- *  - iOS-like calendar
- *  - LocalStorage persistence
+ * E-Intern Diary — main.js
+ * - Dashboard: stacked monthly bar chart (PRO analytics style)
+ * - iOS-like calendar view
+ * - LocalStorage persistence
  * -------------------------------------------------------------------------- */
 
 /* 1) Utilities ------------------------------------------------------------- */
@@ -33,21 +33,15 @@ const escapeHtml = (s = "") =>
 
 const escapeAttr = (s = "") => s.replace(/["'><`]/g, "");
 
-/* toast helper (สร้าง element ให้เองถ้าไม่มีใน HTML) */
 function showToast(msg) {
-  let t = $("#toast");
-  if (!t) {
-    t = document.createElement("div");
-    t.id = "toast";
-    t.className = "toast";
-    document.body.appendChild(t);
-  }
+  const t = $("#toast");
+  if (!t) return;
   t.textContent = msg;
   t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 1800);
+  setTimeout(() => t.classList.remove("show"), 1700);
 }
 
-/* image resize เพื่อลดขนาด localStorage */
+/* Resize image before saving into localStorage */
 async function resizeImageFile(file, maxW = 1200, quality = 0.85) {
   const img = await new Promise((res) => {
     const r = new FileReader();
@@ -71,7 +65,7 @@ async function resizeImageFile(file, maxW = 1200, quality = 0.85) {
 /* 2) State ----------------------------------------------------------------- */
 const STORE_KEY = "eintern_diary_v1";
 let entries = JSON.parse(localStorage.getItem(STORE_KEY) || "[]");
-let view = new Date(); // calendar month view
+let view = new Date();
 
 const CATEGORY_LABEL = {
   intern: "ฝึกงาน",
@@ -125,7 +119,7 @@ function renderList(filtered) {
       </div>
       ${
         e.links?.length
-          ? `<div>ลิงก์: ${e.links
+          ? `<div style="margin-top:4px;font-size:12px">ลิงก์: ${e.links
               .map(
                 (u) =>
                   `<a href="${escapeAttr(u)}" target="_blank">${escapeHtml(
@@ -331,7 +325,7 @@ $("#importJson").addEventListener("change", (e) => {
 });
 
 $("#printBtn").addEventListener("click", () => window.print());
-$("#reportBtn").addEventListener("click", () => window.print()); // ใช้ layout ปัจจุบันเป็น PDF
+$("#reportBtn").addEventListener("click", () => window.print());
 $("#emailBtn").addEventListener("click", () => composeEmail());
 
 $("#fabAdd").addEventListener("click", () => {
@@ -348,9 +342,9 @@ $("#resetBtn").addEventListener("click", () => {
   }
 });
 
-/* 8) Dashboard — Stacked Month Chart ------------------------------------- */
+/* 8) Dashboard — stacked monthly bar (PRO style) ------------------------- */
 function buildDashboard() {
-  const canvas = $("#chartTags");
+  const canvas = $("#chartMonth");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   const W = canvas.width;
@@ -385,111 +379,127 @@ function buildDashboard() {
   const maxTotal = Math.max(1, ...stacks.map((s) => s.total));
 
   const monthLabels = [
-    "ม.ค.",
-    "ก.พ.",
-    "มี.ค.",
-    "เม.ย.",
-    "พ.ค.",
-    "มิ.ย.",
-    "ก.ค.",
-    "ส.ค.",
-    "ก.ย.",
-    "ต.ค.",
-    "พ.ย.",
-    "ธ.ค.",
+    "ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.",
+    "ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค.",
   ];
 
-  const left = 80;
-  const right = 20;
+  const left = 52;
+  const right = 40;
   const top = 30;
-  const bottom = 26;
+  const bottom = 40;
   const innerW = W - left - right;
   const innerH = H - top - bottom;
 
-  const rowSpace = innerH / 12;
-  const barH = rowSpace * 0.5;
-
-  // background box
-  ctx.fillStyle = "#050816";
-  ctx.beginPath();
-  ctx.roundRect(left - 10, top - 12, innerW + 20, innerH + 24, 14);
+  // background panel
+  ctx.fillStyle = "#020617";
+  roundRect(ctx, left - 12, top - 10, innerW + 24, innerH + 20, 18);
   ctx.fill();
 
-  // grid lines
-  ctx.strokeStyle = "rgba(148,163,184,0.25)";
-  ctx.lineWidth = 1;
+  // horizontal grid
   const gridSteps = 4;
-  for (let i = 0; i <= gridSteps; i++) {
-    const x = left + (innerW * i) / gridSteps;
-    ctx.beginPath();
-    ctx.moveTo(x, top);
-    ctx.lineTo(x, top + innerH);
-    ctx.stroke();
-  }
-
-  // labels & bars
+  ctx.strokeStyle = "rgba(148,163,184,0.35)";
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.font = "11px Poppins";
+  ctx.fillStyle = "#9ca3af";
+  ctx.textAlign = "right";
   ctx.textBaseline = "middle";
-  ctx.font = "12px Poppins";
+
+  for (let i = 0; i <= gridSteps; i++) {
+    const ratio = i / gridSteps;
+    const y = top + innerH - innerH * ratio;
+    ctx.beginPath();
+    ctx.moveTo(left, y);
+    ctx.lineTo(left + innerW, y);
+    ctx.stroke();
+    const val = (maxTotal * ratio).toFixed(1).replace(/\.0$/, "");
+    ctx.fillText(val, left - 6, y);
+  }
+  ctx.setLineDash([]);
+
+  // bars
+  const barCount = 12;
+  const slotW = innerW / barCount;
+  const barW = slotW * 0.6;
 
   stacks.forEach((s, i) => {
-    const centerY = top + rowSpace * i + rowSpace / 2;
-
-    // month label
-    ctx.fillStyle = "#9ca3af";
-    ctx.textAlign = "right";
-    ctx.fillText(monthLabels[i], left - 12, centerY);
-
-    const total = s.total;
-    if (total <= 0) return;
-
-    const totalW = (total / maxTotal) * innerW;
-    let xStart = left;
+    const xCenter = left + slotW * i + slotW / 2;
+    let yBottom = top + innerH;
 
     const parts = [
-      { key: "intern", color: CATEGORY_COLOR.intern, value: s.intern },
-      { key: "holiday", color: CATEGORY_COLOR.holiday, value: s.holiday },
-      { key: "study", color: CATEGORY_COLOR.study, value: s.study },
+      { key: "intern", color: CATEGORY_COLOR.intern, val: s.intern },
+      { key: "holiday", color: CATEGORY_COLOR.holiday, val: s.holiday },
+      { key: "study", color: CATEGORY_COLOR.study, val: s.study },
     ];
 
     parts.forEach((p) => {
-      if (p.value <= 0) return;
-      const w = totalW * (p.value / total);
+      if (p.val <= 0) return;
+      const h = innerH * (p.val / maxTotal);
+      const y = yBottom - h;
       ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.roundRect(xStart, centerY - barH / 2, w, barH, 6);
+      roundRect(ctx, xCenter - barW / 2, y, barW, h, 5);
       ctx.fill();
-      xStart += w;
+      yBottom = y;
     });
 
-    // numeric label
-    ctx.fillStyle = "#e5e7eb";
-    ctx.textAlign = "left";
-    ctx.fillText(`${total.toFixed(1)} ชม.`, left + totalW + 8, centerY);
+    // total label top of bar (ถ้ามีค่า)
+    if (s.total > 0) {
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#e5e7eb";
+      ctx.font = "11px Poppins";
+      const textY = yBottom - 10;
+      ctx.fillText(s.total.toFixed(1).replace(/\.0$/, ""), xCenter, textY);
+    }
   });
 
-  // legend
+  // month labels
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillStyle = "#9ca3af";
+  ctx.font = "11px Poppins";
+  monthLabels.forEach((lb, i) => {
+    const xCenter = left + slotW * i + slotW / 2;
+    ctx.fillText(lb, xCenter, top + innerH + 8);
+  });
+
+  // legend bottom-right
   const legendItems = [
     { label: "ฝึกงาน", color: CATEGORY_COLOR.intern },
     { label: "วันหยุด", color: CATEGORY_COLOR.holiday },
     { label: "ไปเรียน", color: CATEGORY_COLOR.study },
   ];
-
-  let lx = left;
-  const ly = H - 12;
+  let lx = left + innerW - 150;
+  const ly = top - 14;
   legendItems.forEach((it) => {
     ctx.fillStyle = it.color;
-    ctx.beginPath();
-    ctx.roundRect(lx, ly - 6, 18, 8, 4);
+    roundRect(ctx, lx, ly - 6, 18, 8, 4);
     ctx.fill();
     lx += 24;
     ctx.fillStyle = "#9ca3af";
     ctx.textAlign = "left";
+    ctx.font = "11px Poppins";
     ctx.fillText(it.label, lx, ly);
-    lx += ctx.measureText(it.label).width + 18;
+    lx += ctx.measureText(it.label).width + 14;
   });
 }
 
-/* 9) Calendar (iOS-ish) --------------------------------------------------- */
+// helper: roundRect for canvas
+function roundRect(ctx, x, y, w, h, r) {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+  ctx.lineTo(x + radius, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+/* 9) Calendar (iOS style) ------------------------------------------------- */
 $("#prevMon").addEventListener("click", () => {
   view = new Date(view.getFullYear(), view.getMonth() - 1, 1);
   buildCalendar();
@@ -528,6 +538,7 @@ function buildCalendar(targetId = "calendar") {
   const days = new Date(y, m + 1, 0).getDate();
   const offset = first.getDay();
 
+  // leading blanks
   for (let i = 0; i < offset; i++) {
     const blank = document.createElement("div");
     blank.className = "cell";
@@ -548,10 +559,7 @@ function buildCalendar(targetId = "calendar") {
 
     const cell = document.createElement("div");
     cell.className = "cell";
-
-    if (key === todayKey && targetId === "calendar") {
-      cell.classList.add("today");
-    }
+    if (key === todayKey && targetId === "calendar") cell.classList.add("today");
 
     cell.innerHTML = `<div class="num">${d}</div><div class="pills"></div>`;
     const wrap = cell.querySelector(".pills");
