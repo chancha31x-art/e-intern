@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0f131a" />
+  <title>E‑Intern Diary — Pro</title>
+  <meta name="description" content="เว็บบันทึกการฝึกงาน (E‑Intern Diary) แบบ Frontend‑only: HTML5 + CSS + Vanilla JS + LocalStorage พร้อมอัปโหลดรูป, แดชบอร์ด, ปฏิทินสไตล์ iOS, และรายงาน PDF"> 
+  <link rel="icon" href="data:," />
+  <!-- Fonts: Poppins + Noto Sans Thai for fallback -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#071126; --card:#0d1320; --muted:#98a8bf; --text:#e8f2ff; --accent:#7dd3fc; --accent-2:#a78bfa; --danger:#ef6a6a; --ring:rgba(167,139,250,.18);
+      --radius:16px; --radius-sm:12px; --shadow:0 14px 40px rgba(3,7,18,.55);
+      --c-intern:#a78bfa; --c-holiday:#fb7185; --c-study:#7dd3fc; --gap:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font:16px/1.6 Poppins, "Noto Sans Thai", system-ui, -apple-system, Segoe UI, Inter, Roboto, Arial, sans-serif; background:linear-gradient(180deg,#051023 0%, var(--bg) 60%); color:var(--text); -webkit-font-smoothing:antialiased}
+    a{color:var(--accent)}
+
+    /* ---------- Header / Toolbar ---------- */
+    header{position:sticky; top:0; z-index:20; backdrop-filter:saturate(150%) blur(8px); background:linear-gradient(180deg, rgba(9,14,26,.85), rgba(9,14,26,.6)); border-bottom:1px solid rgba(255,255,255,.04)}
+    .wrap{max-width:1100px; margin:0 auto; padding:20px}
+    .brand{display:flex; gap:12px; align-items:center}
+    .logo{width:40px; height:40px; border-radius:10px; background:linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow:0 12px 40px var(--ring); flex:0 0 auto}
+    nav{display:grid; grid-template-columns:1fr auto; gap:12px; align-items:center}
+    .brand strong{font-size:16px; display:block}
+    .brand small{color:var(--muted)}
+    .actions{display:flex; gap:10px; align-items:center; overflow:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px}
+    .actions::-webkit-scrollbar{display:none}
+    button, .btn{appearance:none; border:1px solid rgba(255,255,255,.06); background:linear-gradient(180deg,#0f1724,#0b1220); color:var(--text); padding:10px 14px; border-radius:12px; cursor:pointer; transition:transform .16s ease, box-shadow .16s ease, opacity .12s ease; box-shadow:0 8px 28px rgba(2,6,18,.5)}
+    button:hover, .btn:hover{transform:translateY(-2px); box-shadow:0 18px 36px rgba(2,6,18,.55)}
+    .btn-accent{background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:#051022; border-color:transparent; font-weight:600}
+    .btn-danger{background:linear-gradient(180deg,#3a1313,#261010); border-color:rgba(255,120,120,.06); color:#ffdcdc}
+
+    /* subtle responsive container: form & list side-by-side, others full-width below */
+    main{display:grid; grid-template-columns:1fr 1fr; gap:var(--gap); align-items:start; padding:22px}
+    main > .card:nth-child(n+3){grid-column:1 / -1}
+    @media (max-width: 1200px){ main{grid-template-columns:1fr 1fr} }
+    @media (max-width: 1024px){ main{grid-template-columns:1fr}; main > .card{grid-column:auto} }
+    @media (max-width: 768px){ main{grid-template-columns:1fr; padding:14px; gap:12px} }
+
+    h1,h2,h3{letter-spacing:.2px}
+    h2{font-size:20px}
+
+    .card{background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)); border:1px solid rgba(255,255,255,.04); border-radius:var(--radius); box-shadow:var(--shadow)}
+    .card .hd{padding:16px 18px; border-bottom:1px solid rgba(255,255,255,.03); display:flex; align-items:center; justify-content:space-between}
+    .card .bd{padding:18px}
+
+    /* ---------- Form ---------- */
+    form .grid{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+    @media (max-width: 560px){ form .grid{grid-template-columns:1fr} }
+    label{display:block; font-size:12px; color:var(--muted); margin:0 0 6px}
+    input, select, textarea{width:100%; padding:14px 14px; color:var(--text); background:rgba(9,16,28,.55); border:1px solid rgba(255,255,255,.04); border-radius:12px; outline:none}
+    input::placeholder, textarea::placeholder{color:rgba(233,242,255,.45)}
+    input:focus, select:focus, textarea:focus{box-shadow:0 6px 22px var(--ring); border-color:rgba(167,139,250,.35)}
+    textarea{min-height:120px; resize:vertical}
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .summary{color:var(--muted); font-size:13px}
+
+    /* ---------- List ---------- */
+    .list{display:grid; gap:12px}
+    .entry{background:linear-gradient(180deg, rgba(255,255,255,.012), rgba(255,255,255,.01)); border:1px solid rgba(255,255,255,.04); border-radius:var(--radius-sm); padding:14px}
+    .entry h3{margin:0 0 6px; font-size:17px}
+    .meta{font-size:12px; color:var(--muted); display:flex; gap:12px; flex-wrap:wrap}
+    .tags{display:flex; gap:6px; flex-wrap:wrap; margin:8px 0}
+    .tag{font-size:12px; padding:4px 8px; border-radius:999px; color:#cfe2ff; background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.02)}
+    .tag.intern{background:rgba(167,139,250,.12); border-color:rgba(167,139,250,.22); color:#e9d5ff}
+    .tag.holiday{background:rgba(251,113,133,.12); border-color:rgba(251,113,133,.22); color:#ffe4e6}
+    .tag.study{background:rgba(125,211,252,.12); border-color:rgba(125,211,252,.22); color:#e0f2fe}
+    .entry .ops{display:flex; gap:8px; margin-top:10px}
+
+    /* ---------- Gallery ---------- */
+    .gallery{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
+    .gallery img{width:96px; height:96px; object-fit:cover; border-radius:12px; border:1px solid rgba(255,255,255,.04); cursor:zoom-in; transition:transform .18s ease}
+    .gallery img:active{transform:scale(.98)}
+    .lightbox{position:fixed; inset:0; background:rgba(2,6,12,.8); display:none; align-items:center; justify-content:center; padding:20px; z-index:60}
+    .lightbox img{max-width:92vw; max-height:82vh; border-radius:12px; box-shadow:0 28px 80px rgba(0,0,0,.7)}
+    .lb-close{position:absolute; right:18px; top:18px; background:rgba(0,0,0,.45); color:var(--text); border:none; padding:8px 10px; border-radius:999px; cursor:pointer; font-size:18px}
+
+    /* ---------- Dashboard ---------- */
+    .dash{display:grid; grid-template-columns:1fr; gap:16px}
+  .chart-wrap{background:rgba(9,16,28,.5); border:1px solid rgba(255,255,255,.04); border-radius:14px; padding:12px; --chart-h:200px}
+  canvas{width:100%; height:var(--chart-h); display:block}
+  @media (max-width: 768px){ .chart-wrap{--chart-h:160px} }
+  @media (max-width: 480px){ .chart-wrap{--chart-h:140px} }
+
+    /* ---------- iOS-like Calendar ---------- */
+    .cal-actions{display:flex; gap:8px; align-items:center}
+    .cal-title{font-weight:600; padding:8px 12px; border-radius:999px; background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.03)}
+  .calendar{display:grid; grid-template-columns:repeat(7, 1fr); gap:8px; text-align:left; grid-auto-rows:var(--cal-cell,60px)}
+    .weekday{font-size:12px; color:var(--muted); text-align:center; padding-bottom:2px}
+  .cell{background:rgba(255,255,255,.01); border:1px solid rgba(255,255,255,.03); border-radius:12px; padding:8px; min-height:60px; display:flex; flex-direction:column; gap:4px; position:relative; overflow:hidden}
+  .cell .num{position:absolute; top:8px; right:10px; font-size:12px; color:#a4b3c7; font-weight:600}
+  .cell .day-badge{position:absolute; left:8px; top:8px; font-size:12px; color:var(--muted); background:transparent}
+  .cell .sum{margin-top:auto; font-size:10px; color:var(--muted); text-align:right}
+    .cell.today{outline:2px solid rgba(125,211,252,.24)}
+    .cell .pills{display:flex; flex-direction:column; gap:6px; margin-top:10px}
+    .pill{display:flex; align-items:center; gap:8px; font-size:12px; padding:6px 10px; border-radius:12px; background:rgba(15,20,30,.45); border:1px solid rgba(255,255,255,.03); overflow:hidden; white-space:nowrap; text-overflow:ellipsis}
+    .dot{width:8px; height:8px; border-radius:999px}
+    .pill.intern .dot{background:var(--c-intern)}
+    .pill.holiday .dot{background:var(--c-holiday)}
+    .pill.study .dot{background:var(--c-study)}
+    .more{font-size:12px; color:#a4b3c7; padding-left:10px}
+
+    /* ---------- Print ---------- */
+    #report{display:none}
+    #report.show{display:block}
+    @media print{
+      header, .actions, .filters, .ops, #importJson, #fabAdd, main{display:none !important}
+      body{background:#fff; color:#000}
+      .card, .entry{box-shadow:none; border-color:#ddd}
+      #report{display:block}
+      #report .entry{background:#fff; border-color:#eee}
+      canvas, .chart-wrap{display:none !important}
+      .wrap{padding:20px}
+    }
+
+    /* ---------- Mobile polish ---------- */
+    @media (max-width: 768px){
+      body{font-size:15px}
+      .wrap{padding:14px}
+      header{position:sticky; top:0}
+      header .wrap{padding:10px 12px}
+      nav{grid-template-columns:1fr; gap:10px}
+      .actions{gap:8px; flex-wrap:wrap; padding:6px 0}
+      .actions .btn{flex:0 0 calc(50% - 4px); font-size:13px; padding:10px 8px}
+      main{padding:12px; gap:10px}
+      .card{border-radius:12px}
+      .card .hd{padding:12px 14px; gap:10px}
+      .card .bd{padding:12px}
+      h2{font-size:18px}
+      form .grid{grid-template-columns:1fr; gap:10px}
+      label{font-size:11px; margin:0 0 4px}
+      input, select, textarea{padding:12px; font-size:16px; border-radius:10px}
+      button, .btn{min-height:44px; font-size:14px; padding:8px 12px}
+      .entry{padding:10px; border-radius:10px}
+      .entry h3{font-size:15px; margin:0 0 4px}
+      .meta{font-size:11px}
+      .tags{gap:4px; margin:6px 0}
+      .tag{font-size:11px; padding:3px 6px}
+      .pill{font-size:11px; padding:4px 8px}
+      .gallery img{width:32vw; height:32vw; border-radius:8px}
+      .chart-wrap{padding:10px; --chart-h:150px}
+      .chart-wrap h3{font-size:14px; margin:0 0 6px}
+      .calendar{gap:6px; grid-auto-rows:52px}
+      .cell{padding:6px; min-height:52px; border-radius:10px}
+      .cell .num{font-size:10px; top:4px; right:6px}
+      .cell .sum{font-size:9px}
+      .more{font-size:9px}
+      .summary{font-size:12px}
+    }
+
+    /* Extra small screens (<480px) */
+    @media (max-width: 480px){
+      .wrap{padding:10px}
+      header .wrap{padding:8px 10px}
+      main{padding:10px; gap:8px}
+      .actions{gap:6px}
+      .actions .btn{flex:0 0 calc(50% - 3px); font-size:12px; padding:8px 6px}
+      .card .hd{padding:10px 12px}
+      .card .bd{padding:10px}
+      h2{font-size:16px}
+      input, select, textarea{padding:11px; font-size:16px}
+      .entry{padding:8px}
+      .chart-wrap{padding:8px; --chart-h:130px}
+      .calendar{gap:4px; grid-auto-rows:48px}
+      .cell{padding:4px; min-height:48px}
+      .cell .num{font-size:9px}
+      .pill{font-size:9px; padding:2px 4px}
+      .gallery img{width:28vw; height:28vw}
+    }
+
+    /* ---------- Toast ---------- */
+    .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:22px; background:linear-gradient(90deg, rgba(0,0,0,.6), rgba(0,0,0,.5)); color:var(--text); padding:10px 14px; border-radius:12px; box-shadow:0 12px 30px rgba(2,6,18,.6); opacity:0; pointer-events:none; transition:opacity .18s ease, transform .18s ease; z-index:80}
+    .toast.show{opacity:1; transform:translate(-50%, -6px); pointer-events:auto}
+
+    /* ---------- FAB ---------- */
+    .fab{position:fixed; right:16px; bottom:calc(16px + env(safe-area-inset-bottom)); z-index:30; padding:14px 18px; border-radius:999px; font-weight:700; background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:#051022; border:none; box-shadow:0 18px 44px rgba(2,6,18,.55); cursor:pointer}
+    .fab:active{transform:translateY(1px)}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <nav>
+        <div class="brand">
+          <div class="logo" aria-hidden="true"></div>
+          <div>
+            <strong>E‑Intern Diary</strong><br>
+            <!--<small style="color:var(--muted)">HTML5 + CSS (and tiny JS)</small>-->
+          </div>
+        </div>
+        <div class="actions">
+          <button id="exportBtn" class="btn">Export JSON</button>
+          <label class="btn" for="importJson" style="cursor:pointer">Import JSON<input id="importJson" type="file" accept="application/json" hidden></label>
+          <button id="reportBtn" class="btn">สร้างรายงาน (PDF)</button>
+          <button id="emailBtn" class="btn">ส่งรายงานทางอีเมล</button>
+          <button id="printBtn" class="btn">พิมพ์/บันทึก PDF</button>
+          <button id="resetBtn" class="btn btn-danger">ล้างทั้งหมด</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap" id="app">
+    <!-- Left: Entry form -->
+    <section class="card" aria-labelledby="formHd">
+      <div class="hd"><h2 id="formHd" style="margin:0">เพิ่มบันทึกการฝึกงาน</h2><span class="summary" id="formMode">โหมด: สร้างใหม่</span></div>
+      <div class="bd">
+        <form id="entryForm" enctype="multipart/form-data">
+          <div class="grid">
+            <p>
+              <label for="date">วันที่</label>
+              <input type="date" id="date" required autocomplete="off">
+            </p>
+            <p>
+              <label for="title">หัวข้อ / งานหลัก</label>
+              <input type="text" id="title" placeholder="เช่น อบรมความปลอดภัย, ทำรายงาน..." required autocomplete="on" inputmode="text">
+            </p>
+            <p>
+              <label for="hours">ชั่วโมงที่ฝึก (ชั่วโมง)</label>
+              <input type="number" id="hours" min="0" step="0.5" placeholder="6" required inputmode="decimal" autocomplete="off">
+            </p>
+            <p>
+              <label for="mood">ความรู้สึกวันนี้</label>
+              <select id="mood">
+                <option value="🙂">🙂 ปกติดี</option>
+                <option value="😄">😄 ยอดเยี่ยม</option>
+                <option value="😓">😓 เหนื่อย</option>
+                <option value="🤔">🤔 สับสน</option>
+              </select>
+            </p>
+          </div>
+          <p>
+            <label for="category">ประเภท/แท็กหลัก</label>
+            <select id="category">
+              <option value="intern">ฝึกงาน</option>
+              <option value="holiday">วันหยุด</option>
+              <option value="study">ไปเรียน</option>
+            </select>
+          </p>
+          <p>
+            <label for="tasks">สิ่งที่ทำ/สิ่งที่เรียนรู้</label>
+            <textarea id="tasks" placeholder="สรุปงานที่ทำ สิ่งที่เรียนรู้ ปัญหาที่เจอ และวิธีแก้" autocomplete="on"></textarea>
+          </p>
+          <div class="grid">
+            <p>
+              <label for="skills">ทักษะที่ใช้ (comma คั่น)</label>
+              <input type="text" id="skills" placeholder="Excel, HTML, Communication" autocomplete="on" inputmode="text">
+            </p>
+            <p>
+              <label for="links">ลิงก์อ้างอิง (comma คั่น)</label>
+              <input type="url" id="links" placeholder="https://docs.example, https://video.example" multiple inputmode="url" autocomplete="on">
+            </p>
+          </div>
+          <p>
+            <label for="photos">รูปภาพผลงาน/หลักฐาน (อัปโหลดได้หลายรูป)</label>
+            <input type="file" id="photos" accept="image/*" multiple capture="environment">
+            <small class="summary">* ระบบจะย่อรูปอัตโนมัติและเก็บไว้ในเครื่อง (LocalStorage)</small>
+          </p>
+          <div class="row">
+            <button type="submit" class="btn-accent" id="saveBtn">บันทึก</button>
+            <button type="button" id="cancelEdit" class="btn" hidden>ยกเลิกแก้ไข</button>
+          </div>
+          <input type="hidden" id="editingId">
+        </form>
+      </div>
+    </section>
+
+    <!-- Right: List & filters -->
+    <section class="card" aria-labelledby="listHd">
+      <div class="hd">
+        <h2 id="listHd" style="margin:0">บันทึกทั้งหมด</h2>
+        <details class="filters"><summary>ตัวกรอง ▾</summary>
+          <input type="date" id="filterFrom" title="จากวันที่">
+          <input type="date" id="filterTo" title="ถึงวันที่">
+          <select id="filterMood" title="อารมณ์">
+            <option value="">ทุกอารมณ์</option>
+            <option>😄</option>
+            <option>🙂</option>
+            <option>🤔</option>
+            <option>😓</option>
+          </select>
+          <input type="search" id="filterQ" placeholder="ค้นหาหัวข้อ/สิ่งที่ทำ/ทักษะ">
+          <button id="clearFilters" class="btn">ล้างตัวกรอง</button>
+        </details>
+      </div>
+      <div class="bd">
+        <div class="summary" id="totals">0 entries · 0 ชม.</div>
+        <div class="list" id="entryList" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- Dashboard -->
+    <section class="card" aria-labelledby="dashHd">
+      <div class="hd"><h2 id="dashHd" style="margin:0">แดชบอร์ด</h2></div>
+      <div class="bd">
+        <div class="dash">
+          <div class="chart-wrap">
+            <h3 style="margin:0 0 8px">ชั่วโมงรวม/สัปดาห์ (เดือนนี้)</h3>
+            <canvas id="chartWeek" width="600" height="240" aria-label="กราฟชั่วโมงต่อสัปดาห์"></canvas>
+          </div>
+          <div class="chart-wrap">
+            <h3 style="margin:0 0 8px">ชั่วโมงรวม/ประเภทงาน (Tag)</h3>
+            <canvas id="chartTags" width="600" height="240" aria-label="กราฟชั่วโมงตามแท็ก"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Calendar -->
+    <section class="card" aria-labelledby="calHd">
+      <div class="hd" style="gap:10px">
+        <h2 id="calHd" style="margin:0">ปฏิทินการฝึก (สไตล์ iOS)</h2>
+        <div class="cal-actions">
+          <button id="prevMon">◀</button>
+          <div class="cal-title" id="calTitle"></div>
+          <button id="nextMon">▶</button>
+          <button id="todayBtn" class="btn">วันนี้</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="calendar" id="calendar"></div>
+        <div class="summary">แตะวันที่เพื่อกรองบันทึก หรือคลิก “วันนี้” เพื่อกลับ</div>
+        <div class="summary">คำอธิบายสี: <span class="tag intern">ฝึกงาน</span> <span class="tag study">ไปเรียน</span> <span class="tag holiday">วันหยุด</span></div>
+      </div>
+    </section>
+  </main>
+
+  <button class="fab" id="fabAdd" aria-label="เพิ่มบันทึก">＋ เพิ่มบันทึก</button>
+
+  <!-- Report View (for PDF/Print) -->
+  <section id="report" aria-label="รายงานสรุปการฝึกงาน">
+    <div class="wrap">
+      <h1>รายงานสรุปการฝึกงาน</h1>
+      <p class="summary" id="reportMeta"></p>
+      <h2>สรุปชั่วโมง/ผลงาน</h2>
+      <div id="reportSummary"></div>
+      <h2>ปฏิทินเดือนปัจจุบัน</h2>
+      <div class="calendar" id="reportCalendar"></div>
+      <h2>รายละเอียดบันทึก</h2>
+      <div id="reportEntries"></div>
+    </div>
+  </section>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true">
+    <button class="lb-close" aria-label="ปิด">✕</button>
+    <img alt="preview">
+  </div>
+
+  <script>
+    // --------- Utilities ---------
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => [...document.querySelectorAll(sel)];
+    const storeKey = 'eintern_diary_v1';
+    const fmt = (d) => new Date(d).toLocaleDateString('th-TH', {year:'numeric', month:'short', day:'numeric'});
+    const monthTitle = (y,m)=> new Date(y,m,1).toLocaleDateString('th-TH',{year:'numeric', month:'long'});
+    const toast = (msg) => { const t=$('#toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 1800)};
+
+    async function resizeImageFile(file, maxW=1200, quality=0.85){
+      const img = await new Promise((res)=>{ const r=new FileReader(); r.onload=()=>{ const i=new Image(); i.onload=()=>res(i); i.src=r.result; }; r.readAsDataURL(file); });
+      const scale = Math.min(1, maxW/img.width);
+      const canvas = document.createElement('canvas'); canvas.width = Math.round(img.width*scale); canvas.height = Math.round(img.height*scale);
+      const ctx = canvas.getContext('2d'); ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      return {name:file.name, dataUrl: canvas.toDataURL('image/jpeg', quality)};
+    }
+
+    // --------- State ---------
+    let entries = JSON.parse(localStorage.getItem(storeKey) || '[]');
+    let view = new Date(); // calendar view month
+
+    // --------- Rendering ---------
+    function render(){
+      const q = $('#filterQ')?.value?.trim().toLowerCase() || '';
+      const mood = $('#filterMood')?.value || '';
+      const from = $('#filterFrom')?.value ? new Date($('#filterFrom').value) : null;
+      const to = $('#filterTo')?.value ? new Date($('#filterTo').value) : null;
+
+      const filtered = entries.filter(e=>{
+        const hitQ = !q || [e.title, e.tasks, (e.skills||[]).join(','), (e.links||[]).join(','), e.category||''].join(' ').toLowerCase().includes(q);
+        const hitMood = !mood || e.mood === mood;
+        const dt = new Date(e.date);
+        const hitFrom = !from || dt >= from;
+        const hitTo = !to || dt <= to;
+        return hitQ && hitMood && hitFrom && hitTo;
+      }).sort((a,b)=> new Date(b.date) - new Date(a.date));
+
+      const list = $('#entryList');
+      if(list){
+        list.innerHTML = '';
+        filtered.forEach(e=>{
+          const card = document.createElement('article');
+          card.className='entry';
+          const imgs = e.photos?.length ? `<div class="gallery">${e.photos.map(p=>`<img src="${p.dataUrl}" alt="${escapeAttr(e.title)}">`).join('')}</div>` : '';
+          const tagClass = e.category||'intern';
+          card.innerHTML = `
+            <h3>${e.mood||''} ${e.title}</h3>
+            <div class="meta"> 
+              <span><strong>วันที่:</strong> ${fmt(e.date)}</span>
+              <span><strong>ชั่วโมง:</strong> ${e.hours||0}</span>
+              <span class="tag ${tagClass}">${displayCategory(e.category)}</span>
+            </div>
+            <p>${(e.tasks || '').replace(/\n/g,'<br>')}</p>
+            <div class="tags">${(e.skills||[]).map(s=>`<span class="tag">#${escapeHtml(s)}</span>`).join('')}</div>
+            ${e.links?.length? `<div>ลิงก์: ${e.links.map(u=>`<a href="${escapeAttr(u)}" target="_blank" rel="noopener noreferrer">${escapeHtml(u)}</a>`).join(' · ')}</div>`:''}
+            ${imgs}
+            <div class="ops">
+              <button data-act="edit" data-id="${e.id}">แก้ไข</button>
+              <button data-act="del" data-id="${e.id}" class="btn-danger">ลบ</button>
+            </div>
+          `;
+          list.appendChild(card);
+        });
+        const totalHrs = filtered.reduce((s,e)=> s + Number(e.hours||0), 0);
+        $('#totals').textContent = `${filtered.length} entries · ${totalHrs} ชม.`;
+        $$('#entryList [data-act]').forEach(btn=> btn.addEventListener('click', onListAction));
+      }
+
+      buildDashboard(); buildCalendar();
+    }
+
+    function displayCategory(c){ return c==='holiday'?'วันหยุด': (c==='study'?'ไปเรียน':'ฝึกงาน'); }
+    function escapeHtml(str=''){ return str.replace(/[&<>\"']/g, s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[s])); }
+    function escapeAttr(str=''){ return str.replace(/[\"'><`]/g, '') }
+
+    // --------- Form handling ---------
+    $('#entryForm').addEventListener('submit', async (ev)=>{
+      ev.preventDefault();
+      const editingId = $('#editingId').value;
+      const files = [...($('#photos').files||[])];
+      const photos = await Promise.all(files.map(f=>resizeImageFile(f)));
+      const item = {
+        id: editingId || crypto.randomUUID(),
+        date: $('#date').value,
+        title: $('#title').value.trim(),
+        hours: Number($('#hours').value||0),
+        mood: $('#mood').value,
+        category: $('#category').value || 'intern',
+        tasks: $('#tasks').value.trim(),
+        skills: ($('#skills').value||'').split(',').map(s=>s.trim()).filter(Boolean),
+        links: ($('#links').value||'').split(',').map(s=>s.trim()).filter(Boolean),
+        photos: (files.length>0? photos : (editingId? (entries.find(e=>e.id===editingId)?.photos||[]) : [])),
+      };
+      if(!item.date || !item.title){ toast('กรอกวันที่และหัวข้อก่อนน้า'); return; }
+
+      if(editingId){
+        const idx = entries.findIndex(e=>e.id===editingId);
+        if(idx>-1) entries[idx] = item;
+        $('#formMode').textContent = 'โหมด: สร้างใหม่';
+        $('#cancelEdit').hidden = true;
+      }else{
+        entries.push(item);
+      }
+      localStorage.setItem(storeKey, JSON.stringify(entries));
+      ev.target.reset();
+      $('#editingId').value = '';
+      toast('บันทึกแล้ว ✅');
+      render();
+    });
+
+    function onListAction(e){
+      const id = e.currentTarget.getAttribute('data-id');
+      const act = e.currentTarget.getAttribute('data-act');
+      if(act==='edit'){
+        const it = entries.find(x=>x.id===id); if(!it) return;
+        $('#date').value = it.date; $('#title').value = it.title; $('#hours').value = it.hours; $('#mood').value = it.mood; $('#category').value = it.category||'intern';
+        $('#tasks').value = it.tasks; $('#skills').value = (it.skills||[]).join(', '); $('#links').value = (it.links||[]).join(', ');
+        $('#photos').value = '';
+        $('#editingId').value = it.id; $('#formMode').textContent = 'โหมด: แก้ไข'; $('#cancelEdit').hidden = false; window.scrollTo({top:0, behavior:'smooth'});
+      }
+      if(act==='del'){
+        if(confirm('ลบบันทึกนี้ถาวร?')){
+          entries = entries.filter(x=>x.id!==id);
+          localStorage.setItem(storeKey, JSON.stringify(entries));
+          render(); toast('ลบแล้ว 🗑️');
+        }
+      }
+    }
+
+    $('#cancelEdit').addEventListener('click', ()=>{ $('#entryForm').reset(); $('#editingId').value=''; $('#formMode').textContent='โหมด: สร้างใหม่'; $('#cancelEdit').hidden=true; });
+
+    // --------- Filters ---------
+    ;['filterFrom','filterTo','filterMood','filterQ'].forEach(id=> document.getElementById(id)?.addEventListener('input', render));
+    $('#clearFilters')?.addEventListener('click', ()=>{ ['filterFrom','filterTo','filterMood','filterQ'].forEach(id=> {const el=document.getElementById(id); if(el) el.value='';}); render(); });
+
+    // --------- Export / Import / Print / Reset / Report / Email ---------
+    $('#exportBtn').addEventListener('click', ()=>{
+      const blob = new Blob([JSON.stringify(entries, null, 2)], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'eintern-diary.json'; a.click(); URL.revokeObjectURL(a.href);
+    });
+    $('#importJson').addEventListener('change', (e)=>{
+      const file = e.target.files?.[0]; if(!file) return;
+      const reader = new FileReader();
+      reader.onload = () => { try{ const data = JSON.parse(reader.result);
+        if(Array.isArray(data)){ entries = data; localStorage.setItem(storeKey, JSON.stringify(entries)); render(); toast('นำเข้าแล้ว 📥'); }
+        else toast('ไฟล์รูปแบบไม่ถูกต้อง');
+      }catch(err){ toast('อ่านไฟล์ไม่สำเร็จ'); }};
+      reader.readAsText(file); e.target.value = '';
+    });
+    $('#printBtn').addEventListener('click', ()=> window.print());
+    $('#reportBtn').addEventListener('click', ()=> openReport());
+    $('#emailBtn').addEventListener('click', ()=> composeEmail());
+    // FAB scroll-to-form
+    $('#fabAdd').addEventListener('click', ()=>{ window.scrollTo({top:0, behavior:'smooth'}); setTimeout(()=> $('#title').focus(), 400); });
+
+    // --------- Dashboard ---------
+    function buildDashboard(){
+      const now = new Date(); const y=now.getFullYear(), m=now.getMonth();
+      const byWeek = [0,0,0,0,0,0];
+      const byTag = {};
+      entries.forEach(e=>{ const d=new Date(e.date); if(d.getMonth()!==m || d.getFullYear()!==y) return; 
+        const week = Math.floor((d.getDate()-1)/7)+1; byWeek[week]+= Number(e.hours||0);
+        (e.skills||[]).forEach(s=>{ byTag[s]= (byTag[s]||0) + Number(e.hours||0); });
+      });
+      drawBarChart($('#chartWeek'), byWeek.slice(1), ['สัปดาห์1','2','3','4','5']);
+      const tagLabels = Object.keys(byTag).slice(0,8); const tagValues = tagLabels.map(k=>byTag[k]);
+      drawBarChart($('#chartTags'), tagValues, tagLabels);
+    }
+
+    function drawBarChart(canvas, values=[], labels=[]){
+      if(!canvas) return;
+      const ctx = canvas.getContext('2d');
+      // Make canvas sharp on HiDPI
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      ctx.scale(dpr, dpr);
+      // Clear (in CSS pixels)
+      ctx.clearRect(0, 0, rect.width, rect.height);
+
+      const W = rect.width, H = rect.height;
+      const padX = 44, padY = 32; // axis padding
+      const chartW = W - padX * 2;
+      const chartH = H - padY * 2;
+      // background grid lines
+      ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+      ctx.beginPath();
+      const gridSteps = 4;
+      for(let i=0;i<=gridSteps;i++){ const y = padY + (chartH * i / gridSteps); ctx.moveTo(padX, y + 0.5); ctx.lineTo(padX + chartW, y + 0.5); }
+      ctx.stroke();
+
+      // bars
+      const max = Math.max(1, ...values);
+      const colCount = Math.max(1, values.length);
+      const colW = chartW / colCount;
+      const barW = Math.max(12, colW * 0.56);
+      const gap = (colW - barW) / 2;
+
+      values.forEach((v,i)=>{
+        const x = padX + i*colW + gap;
+        const h = (v / max) * chartH;
+        const y = padY + (chartH - h);
+        // gradient fill for bar
+        const grad = ctx.createLinearGradient(x, y, x, y + h);
+        grad.addColorStop(0, '#a78bfa'); grad.addColorStop(1, '#7dd3fc');
+        ctx.fillStyle = grad;
+        // rounded rect
+        const r = Math.min(8, barW/2);
+        roundRect(ctx, x, y, barW, h, r);
+        ctx.fill();
+        // value label
+        ctx.fillStyle = 'rgba(233,242,251,0.9)'; ctx.font = '12px system-ui'; ctx.textAlign='center';
+        ctx.fillText(String(v), x + barW/2, y - 6);
+      });
+
+      // x labels
+      ctx.fillStyle = '#98a8bf'; ctx.font = '12px system-ui'; ctx.textAlign='center';
+      labels.forEach((lb,i)=>{
+        const x = padX + i*colW + colW/2;
+        const y = H - 8;
+        ctx.fillText(lb, x, y);
+      });
+    }
+
+    function roundRect(ctx, x, y, w, h, r){
+      const min = Math.min(w/2, r);
+      ctx.beginPath();
+      ctx.moveTo(x + min, y);
+      ctx.arcTo(x + w, y, x + w, y + h, min);
+      ctx.arcTo(x + w, y + h, x, y + h, min);
+      ctx.arcTo(x, y + h, x, y, min);
+      ctx.arcTo(x, y, x + w, y, min);
+      ctx.closePath();
+    }
+
+    // --------- Calendar (iOS-like) ---------
+    $('#prevMon').addEventListener('click', ()=>{ view = new Date(view.getFullYear(), view.getMonth()-1, 1); buildCalendar(); });
+    $('#nextMon').addEventListener('click', ()=>{ view = new Date(view.getFullYear(), view.getMonth()+1, 1); buildCalendar(); });
+    $('#todayBtn').addEventListener('click', ()=>{ view = new Date(); buildCalendar(); });
+
+    function buildCalendar(targetId='calendar'){
+      const el = document.getElementById(targetId); if(!el) return;
+      const y=view.getFullYear(), m=view.getMonth();
+      // local title id may differ for report calendar
+      const titleEl = document.getElementById('calTitle'); if(titleEl) titleEl.textContent = monthTitle(y,m);
+      el.innerHTML='';
+
+      // Weekday headers
+      const wnames = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+      wnames.forEach(w=>{ const wEl=document.createElement('div'); wEl.className='weekday'; wEl.textContent=w; el.appendChild(wEl); });
+
+      const first = new Date(y,m,1);
+      const days = new Date(y, m+1, 0).getDate();
+      // leading blanks to align first day
+      for(let i=0;i<first.getDay();i++){ const blank=document.createElement('div'); blank.className='cell blank'; el.appendChild(blank); }
+
+      for(let d=1; d<=days; d++){
+        const cell = document.createElement('div'); cell.className='cell';
+        const key = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const today = new Date(); if(today.getFullYear()===y && today.getMonth()===m && today.getDate()===d) cell.classList.add('today');
+        cell.innerHTML = `<div class="num">${d}</div><div class="pills"></div><div class="sum"></div>`;
+        const pillWrap = cell.querySelector('.pills');
+
+        const dayEntries = entries.filter(e=> e.date===key);
+        const maxShow = 2; let shown=0; let more=0; let totalH=0;
+        dayEntries.forEach(e=>{ totalH += Number(e.hours||0); const c = e.category||'intern';
+          const pill = document.createElement('div'); pill.className = `pill ${c}`;
+          pill.innerHTML = `<span class="dot"></span><span>${escapeHtml(e.title)}</span>`;
+          if(shown<maxShow){ pillWrap.appendChild(pill); shown++; } else { more++; }
+        });
+        if(more>0){ const moreEl=document.createElement('div'); moreEl.className='more'; moreEl.textContent = `+${more} รายการ`; pillWrap.appendChild(moreEl); }
+        if(totalH>0){ cell.querySelector('.sum').textContent = `${totalH} ชม.`; }
+
+        cell.addEventListener('click', ()=>{
+          const f = document.getElementById('filterFrom'); const t = document.getElementById('filterTo');
+          if(f&&t){ f.value=key; t.value=key; render(); }
+          const dateInput = document.getElementById('date'); if(dateInput){ dateInput.value = key; window.scrollTo({top:0, behavior:'smooth'}); }
+        });
+        el.appendChild(cell);
+      }
+
+      // trailing blanks so grid stays symmetric
+      const totalChildren = el.children.length;
+      const totalCells = totalChildren; // includes weekday headers
+      // since we added 7 weekday headers, compute trailing to make calendar body a multiple of 7 rows
+      const headerCount = 7;
+      const bodyCount = totalChildren - headerCount;
+      const trailing = (7 - (bodyCount % 7)) % 7;
+      for(let i=0;i<trailing;i++){ const blank=document.createElement('div'); blank.className='cell blank'; el.appendChild(blank); }
+    }
+
+    // --------- Report (PDF/Print) ---------
+    function openReport(){
+      const now = new Date();
+      document.getElementById('reportMeta').textContent = `${entries.length} entries — รวม ${entries.reduce((s,e)=> s + Number(e.hours||0), 0)} ชั่วโมง — เดือน ${monthTitle(now.getFullYear(),now.getMonth())}`;
+      const sum = entries.slice().sort((a,b)=> new Date(a.date)-new Date(b.date)).map(e=>`<li><strong>${fmt(e.date)}</strong> — ${escapeHtml(e.title)} (${e.hours||0} ชม.) — ${displayCategory(e.category)}</li>`).join('');
+      document.getElementById('reportSummary').innerHTML = `<ul>${sum}</ul>`;
+      document.getElementById('reportEntries').innerHTML = entries.map(e=>`<article class="entry"><h3>${fmt(e.date)} — ${escapeHtml(e.title)} (${e.hours||0} ชม.)</h3><p>${escapeHtml(e.tasks).replace(/\n/g,'<br>')}</p></article>`).join('');
+      const y=now.getFullYear(), m=now.getMonth(); const byWeek=[0,0,0,0,0,0]; const byTag={};
+      entries.forEach(e=>{ const d=new Date(e.date); if(d.getMonth()!==m || d.getFullYear()!==y) return; const w=Math.floor((d.getDate()-1)/7)+1; byWeek[w]+=Number(e.hours||0); (e.skills||[]).forEach(s=> byTag[s]=(byTag[s]||0)+Number(e.hours||0)); });
+      drawBarChart(document.getElementById('reportChartWeek'), byWeek.slice(1), ['สัปดาห์1','2','3','4','5']);
+      const tagLabels = Object.keys(byTag).slice(0,8); const tagValues = tagLabels.map(k=>byTag[k]);
+      drawBarChart(document.getElementById('reportChartTags'), tagValues, tagLabels);
+      buildCalendar('reportCalendar');
+      document.getElementById('report').classList.add('show'); window.print(); setTimeout(()=> document.getElementById('report').classList.remove('show'), 400);
+    }
+
+    // --------- Email compose (mailto:) ---------
+    function composeEmail(){
+      const hrs = entries.reduce((s,e)=> s + Number(e.hours||0), 0);
+      const body = encodeURIComponent(entries.map(e=> `${e.date} | ${e.title} (${e.hours||0} ชม.)\n- ${e.tasks}` ).join('\n\n'));
+      const subj = encodeURIComponent('รายงานบันทึกการฝึกงาน (แนบ PDF)');
+      const href = `mailto:?subject=${subj}&body=สวัสดีค่ะ/ครับ,\n\nส่งรายงานการฝึกงานสรุปชั่วโมงรวม ${hrs} ชม. ตามไฟล์ PDF ที่แนบไว้\n\nสรุปโดยย่อ:\n\n${body}\n\nหมายเหตุ: ระบบเว็บไม่สามารถแนบไฟล์อัตโนมัติ ให้บันทึกเป็น PDF แล้วแนบไฟล์ในอีเมลนี้ค่ะ/ครับ.`;
+      window.location.href = href;
+    }
+
+    // ---------- Lightweight self-tests (console) ----------
+    (function selfTests(){
+      try {
+        console.assert('a\nb'.replace(/\n/g,'<br>')==='a<br>b','nl2br basic works');
+        console.assert((()=>{ const txt='x\ny'; return txt.replace(/\n/g,'<br>'); })()==='x<br>y','regex literal valid');
+      } catch(err){ console.warn('Self-tests failed', err); }
+    })();
+
+    // --------- Init ---------
+    (function init(){ render(); if(entries.length===0){
+      const seed=[
+        {id:crypto.randomUUID(),date:new Date().toISOString().slice(0,10),title:'ทำงานที่ office',hours:6,mood:'🙂',category:'intern',tasks:'ตั้งค่าอุปกรณ์และอ่านคู่มือ',skills:['Communication'],links:[], photos:[]},
+        {id:crypto.randomUUID(),date:new Date().toISOString().slice(0,10),title:'ไปเรียน วิชา UX',hours:0,mood:'😄',category:'study',tasks:'เข้าคลาสออนไลน์',skills:['UX'],links:[], photos:[]},
+        {id:crypto.randomUUID(),date:new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0,10),title:'วันหยุด',hours:0,mood:'🙂',category:'holiday',tasks:'',skills:[],links:[], photos:[]}
+      ];
+      entries = seed; localStorage.setItem(storeKey, JSON.stringify(entries));
+    }
+    buildDashboard(); buildCalendar();
+    document.getElementById('entryList')?.addEventListener('click', (e)=>{ const img = e.target.closest('img'); if(!img) return; const lb=document.getElementById('lightbox'); lb.style.display='flex'; lb.querySelector('img').src = img.src; lb.addEventListener('click', ()=> lb.style.display='none', {once:true}); });
+    })()
+  </script>
+</body>
+</html>
